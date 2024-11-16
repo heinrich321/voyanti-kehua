@@ -162,6 +162,9 @@ def ha_discovery(data):
             elif "frequency" in parameter.lower():
                 disc_payload["device_class"] = "frequency"
                 disc_payload["unit_of_measurement"] = "Hz"
+            elif "dc power" in parameter.lower():
+                disc_payload["device_class"] = "power"
+                disc_payload["unit_of_measurement"] = "kW"  # Correct unit for DC power
 
             # Publish the discovery payload to the MQTT discovery topic
             discovery_topic = f"{config['mqtt_ha_discovery_topic']}/sensor/kehua/{parameter.replace(' ', '_').lower()}/config"
