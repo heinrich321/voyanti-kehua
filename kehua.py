@@ -178,17 +178,17 @@ class KehuaClient:
             if data_type == 'ASCII':
                 value = self.read_ascii(start_address, length)
             elif data_type == 'UINT16':
-                raw_values = self.read_uint16(start_address, length)
-                if raw_values is not None:
+                raw_value = self.read_uint16(start_address, length)
+                if raw_value is not None:
                     # Apply scale and round to 1 decimal place
-                    value = [round(v * scale, 1) for v in raw_values]
+                    value = round(raw_value * scale, 1)
                 else:
                     value = None
             elif data_type == 'INT16':
-                raw_values = self.read_int16(start_address, length)
-                if raw_values is not None:
+                raw_value = self.read_int16(start_address, length)
+                if raw_value is not None:
                     # Apply scale and round to 1 decimal place
-                    value = [round(v * scale, 1) for v in raw_values]
+                    value = round(raw_value * scale, 1)
                 else:
                     value = None
             elif data_type == 'UINT32':
