@@ -117,12 +117,7 @@ class KehuaClient:
             error_message = f"Error reading UINT16 registers from {start_address} to {start_address + count - 1}"
             print(error_message)
             raise ModbusIOException(error_message)
-            # If only one register is requested, return the single value
-        if count == 1:
-            return result.registers[0]
-        
-        # If multiple registers are requested, return the list
-        return result.registers
+        return result.registers[0]
 
     def read_int16(self, start_address, count=1):
         """Read INT16 data and interpret it as signed."""
@@ -134,12 +129,7 @@ class KehuaClient:
         # Convert the register values to signed integers
         signed_values = [struct.unpack('>h', struct.pack('>H', reg))[0] for reg in result.registers]
         
-        # If only one register is requested, return the single value
-        if count == 1:
-            return signed_values[0]
-
-        # If multiple registers are requested, return the list
-        return signed_values
+        return signed_values[0]
 
     def read_uint32(self, start_address):
         """Read UINT32 data by combining two consecutive 16-bit registers."""
