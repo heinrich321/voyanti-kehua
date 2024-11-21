@@ -1,4 +1,5 @@
-from pymodbus.client import ModbusTcpClient, ModbusIOException
+from pymodbus.client import ModbusTcpClient
+from pymodbus.exceptions import ModbusIOException
 import struct
 
 class KehuaClient:
