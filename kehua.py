@@ -1,4 +1,4 @@
-from pymodbus.client import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient, ModbusIOException
 import struct
 
 class KehuaClient:
@@ -102,8 +102,9 @@ class KehuaClient:
         """Read ASCII data from consecutive registers and convert to string."""
         result = self.client.read_input_registers(start_address, count)
         if result.isError():
-            print(f"Error reading ASCII registers from {start_address} to {start_address + count - 1}")
-            return None
+            error_message = f"Error reading ASCII registers from {start_address} to {start_address + count - 1}"
+            print(error_message)
+            raise ModbusIOException(error_message)
         # Convert register values to ASCII characters
         ascii_string = ''.join([chr((reg >> 8) & 0xFF) + chr(reg & 0xFF) for reg in result.registers])
         return ascii_string.strip('\x00')
@@ -112,24 +113,27 @@ class KehuaClient:
         """Read UINT16 data."""
         result = self.client.read_input_registers(start_address, count)
         if result.isError():
-            print(f"Error reading UINT16 registers from {start_address} to {start_address + count - 1}")
-            return None
+            error_message = f"Error reading UINT16 registers from {start_address} to {start_address + count - 1}"
+            print(error_message)
+            raise ModbusIOException(error_message)
         return result.registers
 
     def read_int16(self, start_address, count=1):
         """Read INT16 data and interpret it as signed."""
         result = self.client.read_input_registers(start_address, count)
         if result.isError():
-            print(f"Error reading INT16 registers from {start_address} to {start_address + count - 1}")
-            return None
+            error_message = f"Error reading INT16 registers from {start_address} to {start_address + count - 1}"
+            print(error_message)
+            raise ModbusIOException(error_message)
         return [struct.unpack('>h', struct.pack('>H', reg))[0] for reg in result.registers]
 
     def read_uint32(self, start_address):
         """Read UINT32 data by combining two consecutive 16-bit registers."""
         result = self.client.read_input_registers(start_address, 2)
         if result.isError():
-            print(f"Error reading UINT32 registers from {start_address} to {start_address + 1}")
-            return None
+            error_message = f"Error reading UINT32 registers from {start_address} to {start_address + 1}"
+            print(error_message)
+            raise ModbusIOException(error_message)
         # Combine two 16-bit registers into a 32-bit unsigned integer
         high, low = result.registers
         return (high << 16) + low
@@ -138,8 +142,9 @@ class KehuaClient:
         """Read INT32 data by combining two consecutive 16-bit registers and interpreting as signed."""
         result = self.client.read_input_registers(start_address, 2)
         if result.isError():
-            print(f"Error reading INT32 registers from {start_address} to {start_address + 1}")
-            return None
+            error_message = f"Error reading INT32 registers from {start_address} to {start_address + 1}"
+            print(error_message)
+            raise ModbusIOException(error_message)
         # Combine two 16-bit registers into a 32-bit signed integer
         high, low = result.registers
         combined = (high << 16) + low
