@@ -1,6 +1,15 @@
 from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ModbusIOException
 import struct
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set logging level
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Format with timestamp
+    datefmt="%Y-%m-%d %H:%M:%S"  # Date format
+)
 
 class KehuaClient:
     register_map = {
@@ -104,7 +113,7 @@ class KehuaClient:
         result = self.client.read_input_registers(start_address, count)
         if result.isError():
             error_message = f"Error reading ASCII registers from {start_address} to {start_address + count - 1}"
-            print(error_message)
+            logging.error(error_message)
             raise ModbusIOException(error_message)
         # Convert register values to ASCII characters
         ascii_string = ''.join([chr((reg >> 8) & 0xFF) + chr(reg & 0xFF) for reg in result.registers])
@@ -115,7 +124,7 @@ class KehuaClient:
         result = self.client.read_input_registers(start_address, count)
         if result.isError():
             error_message = f"Error reading UINT16 registers from {start_address} to {start_address + count - 1}"
-            print(error_message)
+            logging.error(error_message)
             raise ModbusIOException(error_message)
         return result.registers[0]
 
@@ -124,7 +133,7 @@ class KehuaClient:
         result = self.client.read_input_registers(start_address, count)
         if result.isError():
             error_message = f"Error reading INT16 registers from {start_address} to {start_address + count - 1}"
-            print(error_message)
+            logging.error(error_message)
             raise ModbusIOException(error_message)
         # Convert the register values to signed integers
         signed_values = [struct.unpack('>h', struct.pack('>H', reg))[0] for reg in result.registers]
@@ -136,7 +145,7 @@ class KehuaClient:
         result = self.client.read_input_registers(start_address, 2)
         if result.isError():
             error_message = f"Error reading UINT32 registers from {start_address} to {start_address + 1}"
-            print(error_message)
+            logging.error(error_message)
             raise ModbusIOException(error_message)
         # Combine two 16-bit registers into a 32-bit unsigned integer
         high, low = result.registers
@@ -147,7 +156,7 @@ class KehuaClient:
         result = self.client.read_input_registers(start_address, 2)
         if result.isError():
             error_message = f"Error reading INT32 registers from {start_address} to {start_address + 1}"
-            print(error_message)
+            logging.error(error_message)
             raise ModbusIOException(error_message)
         # Combine two 16-bit registers into a 32-bit signed integer
         high, low = result.registers
@@ -188,14 +197,14 @@ class KehuaClient:
                 raw_value = self.read_int32(start_address)
                 value = round(raw_value * scale, 1) if raw_value is not None else None
             else:
-                print(f"Unsupported data type: {data_type}")
+                logging.error(f"Unsupported data type: {data_type}")
                 value = None
 
             # Output the result
             if value is not None:
                 if isinstance(value, list) and len(value) == 1:
                     value = value[0]  # Unpack single-value lists
-                print(f"{name}: {value} {unit}")
+                logging.info(f"{name}: {value} {unit}")
                 return_data[name] = { 
                     'value': value,
                     'unit': unit
@@ -221,4 +230,4 @@ if __name__ == "__main__":
         reader.read_registers()
         reader.close()
     else:
-        print("Failed to connect to the Modbus server.")
+        logging.error("Failed to connect to the Modbus server.")
