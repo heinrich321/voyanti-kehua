@@ -9,6 +9,15 @@ import sys
 import random
 import time
 from kehua import KehuaClient
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Set logging level
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Format with timestamp
+    datefmt="%Y-%m-%d %H:%M:%S"  # Date format
+)
 
 def generate_uuid():
     # Generate random parts of the UUID
@@ -20,19 +29,19 @@ def generate_uuid():
     uuid_str = f'{timestamp:08x}-{random_part >> 32:04x}-{random_part & 0xFFFF:04x}-{node >> 24:04x}-{node & 0xFFFFFF:06x}'
     return uuid_str
 
-print("Starting up...")
+logging.info("Starting up...")
 
 config = {}
 script_version = ""
 
 if os.path.exists('/data/options.json'):
-    print("Loading options.json")
+    logging.info("Loading options.json")
     with open(r'/data/options.json') as file:
         config = json.load(file)
-        print("Config: " + json.dumps(config))
+        logging.info("Config: " + json.dumps(config))
 
 elif os.path.exists('kehua-dev\\config.yaml'):
-    print("Loading config.yaml")
+    logging.info("Loading config.yaml")
     with open(r'kehua-dev\\config.yaml') as file:
         config = yaml.load(file, Loader=yaml.FullLoader)['options']
         
@@ -55,13 +64,13 @@ repub_discovery = 0
 kehua_model = None
 
 def on_connect(client, userdata, flags, reason_code, properties):
-    print(f"Connected with result code {reason_code}")
+    logging.info(f"Connected with result code {reason_code}")
     client.will_set(config['mqtt_base_topic'] + "/availability","offline", qos=0, retain=False)
     global mqtt_connected
     mqtt_connected = True
 
 def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
-    print("MQTT disconnected with result code "+str(reason_code))
+    logging.warning("MQTT disconnected with result code "+str(reason_code))
     global mqtt_connected
     mqtt_connected = False
 
@@ -77,7 +86,7 @@ client.loop_start()
 time.sleep(2)
 
 def exit_handler():
-    print("Script exiting")
+    logging.warning("Script exiting")
     client.publish(config['mqtt_base_topic'] + "/availability","offline")
     return
 
@@ -85,13 +94,13 @@ atexit.register(exit_handler)
 
 def kehua_connect():
     try:
-        print("trying to connect %s" % modbus_ip)
+        logging.info("trying to connect %s" % modbus_ip)
         kehua_client = KehuaClient(modbus_ip, port=modbus_port)
         connected = kehua_client.connect()
-        print("Kehua connected")
+        logging.info("Kehua connected")
         return kehua_client, connected
     except IOError as msg:
-        print("Kehua error connecting: %s" % msg)
+        logging.error("Kehua error connecting: %s" % msg)
         return False
 
 def ha_discovery(data):
@@ -99,7 +108,7 @@ def ha_discovery(data):
 
     if ha_discovery_enabled:
         
-        print("Publishing HA Discovery topic...")
+        logging.info("Publishing HA Discovery topic...")
 
         # Define the device information
         device = {
@@ -168,7 +177,7 @@ def ha_discovery(data):
 
             # Publish the discovery payload to the MQTT discovery topic
             discovery_topic = f"{config['mqtt_ha_discovery_topic']}/sensor/kehua/{parameter.replace(' ', '_').lower()}/config"
-            print(f"Publishing discovery message for {parameter}: {disc_payload}")
+            logging.info(f"Publishing discovery message for {parameter}: {disc_payload}")
             client.publish(discovery_topic, json.dumps(disc_payload), qos=0, retain=True)
             
             # Publish the initial value of the parameter as a plain string for text fields
@@ -176,7 +185,7 @@ def ha_discovery(data):
             client.publish(state_topic, str(details["value"]), qos=0, retain=True)
 
     else:
-        print("HA Discovery Disabled")
+        logging.info("HA Discovery Disabled")
         
 def publish_state_data(data):
     for parameter, details in data.items():
@@ -205,7 +214,7 @@ def publish_state_data(data):
         # Publish the final value as JSON for numerical values
         client.publish(state_topic, json.dumps(value), qos=0, retain=True)
 
-print("Connecting to Kehua...")
+logging.info("Connecting to Kehua...")
 kehua_client, kehua_client_connected = kehua_connect()
 
 client.publish(config['mqtt_base_topic'] + "/availability","offline")
@@ -214,7 +223,7 @@ print_initial = True
 try:
     kehua_model = kehua_client.read_model()
 except:
-    print("Error retrieving model")
+    logging.error("Error retrieving model")
     quit()
     
 
@@ -244,13 +253,13 @@ while code_running == True:
         
         else: #MQTT not connected
             client.loop_stop()
-            print("MQTT disconnected, trying to reconnect...")
+            logging.warning("MQTT disconnected, trying to reconnect...")
             client.connect(config['mqtt_host'], config['mqtt_port'], 60)
             client.loop_start()
             time.sleep(5)
             print_initial = True
     else: #BMS not connected
-        print("Client disconnected, trying to reconnect...")
+        logging.error("Client disconnected, trying to reconnect...")
         kehua_client, kehua_client_connected = kehua_connect()
         client.publish(config['mqtt_base_topic'] + "/availability","offline")
         time.sleep(5)
