@@ -10,7 +10,6 @@ import random
 import time
 from kehua import KehuaClient
 import logging
-from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -229,40 +228,43 @@ except:
 
 
 while code_running == True:
+    try:
+        if kehua_client_connected == True:
+            if mqtt_connected == True:
+                # READ DATA
 
-    if kehua_client_connected == True:
-        if mqtt_connected == True:
-            # READ DATA
+                data = kehua_client.read_registers()
 
-            data = kehua_client.read_registers()
+                if print_initial:
+                    ha_discovery(data)
 
-            if print_initial:
-                ha_discovery(data)
+                publish_state_data(data)
+                    
+                client.publish(config['mqtt_base_topic'] + "/availability","online")
 
-            publish_state_data(data)
-                
-            client.publish(config['mqtt_base_topic'] + "/availability","online")
+                print_initial = False
+                time.sleep(scan_interval)
 
-            print_initial = False
-            time.sleep(scan_interval)
-
-            repub_discovery += 1
-            if repub_discovery*scan_interval > 3600:
-                repub_discovery = 0
+                repub_discovery += 1
+                if repub_discovery*scan_interval > 3600:
+                    repub_discovery = 0
+                    print_initial = True
+            
+            else: #MQTT not connected
+                client.loop_stop()
+                logging.warning("MQTT disconnected, trying to reconnect...")
+                client.connect(config['mqtt_host'], config['mqtt_port'], 60)
+                client.loop_start()
+                time.sleep(5)
                 print_initial = True
-        
-        else: #MQTT not connected
-            client.loop_stop()
-            logging.warning("MQTT disconnected, trying to reconnect...")
-            client.connect(config['mqtt_host'], config['mqtt_port'], 60)
-            client.loop_start()
+        else: #Kehua not connected
+            logging.error("Client disconnected, trying to reconnect...")
+            kehua_client, kehua_client_connected = kehua_connect()
+            client.publish(config['mqtt_base_topic'] + "/availability","offline")
             time.sleep(5)
             print_initial = True
-    else: #BMS not connected
-        logging.error("Client disconnected, trying to reconnect...")
-        kehua_client, kehua_client_connected = kehua_connect()
-        client.publish(config['mqtt_base_topic'] + "/availability","offline")
-        time.sleep(5)
-        print_initial = True
-
+    except Exception as e:
+        logging.error("Error ocurred {e}")
+        exit_handler()
+        break
 client.loop_stop()

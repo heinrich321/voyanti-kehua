@@ -1,6 +1,6 @@
 name: "Voyanti Kehua Addon"
 description: "Voyanti Kehua Addon"
-version: "0.1.6"
+version: "0.1.7"
 slug: "kehua_dev"
 url: "https://github.com/heinrich321/voyanti-kehua"
 init: false
@@ -13,6 +13,7 @@ arch:
 
 uart: true
 usb: true
+startup: system
 
 options:
   mqtt_host: "192.168.1.104"
